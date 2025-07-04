@@ -1,67 +1,32 @@
 // Use tailwindcss for styling
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-
-interface Movie {
-  title: string;
-  year: number;
-  poster_path: string;
-  overview?: string;
-}
-
-const fetchMovies = async ({ pageParam }) => {
-  try {
-    const url = `https://api.themoviedb.org/3/movie/popular?api_key=${
-      import.meta.env.VITE_TMDB_API_KEY
-    }&language=es&page=${pageParam}`;
-    const options = {
-      method: "GET",
-      headers: { accept: "application/json" },
-    };
-
-    const response = await fetch(url, options);
-    const data = await response.json();
-    return data.results as Movie[];
-  } catch (error) {
-    console.error("Error fetching movies:", error);
-    throw new Error("Failed to fetch movies");
-  }
-};
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Movie } from "./models/movie";
+import {
+  CustomApiMovieRepository,
+  type MovieRepository,
+} from "./repositories/movie";
 
 interface MovieCardProps {
   movie: Movie;
-  setHoveredIndex: (index: number) => void;
-  hoveredIndex: number;
   index: number;
 }
 
 const MovieCard = ({
   movie: { title, poster_path: backdrop_path },
-  setHoveredIndex,
-  hoveredIndex,
   index,
 }: MovieCardProps) => {
+  console.log(index);
   const [loaded, setLoaded] = useState(false);
-
-  const handleMouseEnter = () => {
-    if (setHoveredIndex) setHoveredIndex(index);
-  };
-
-  const handleMouseLeave = () => {
-    if (setHoveredIndex) setHoveredIndex(-1);
-  };
-
-  const bluredClasses =
-    hoveredIndex != -1 && hoveredIndex !== index ? "blur-sm brightness-75" : "";
+  const ref = useRef<HTMLDivElement>(null);
 
   return (
     <motion.div
-      className={`relative aspect-[2/3] overflow-hidden shadow-lg bg-[#181a36] ${bluredClasses} transition-all duration-300 ease-in-out cursor-pointer`}
+      ref={ref}
+      className={`relative aspect-[2/3] overflow-hidden shadow-lg bg-[#181a36] group-hover:blur-sm hover:!blur-none transition-all duration-300 ease-in-out cursor-pointer`}
       style={{ borderRadius: "0.5rem" }}
       whileHover={{ scale: 1.05, borderRadius: "1rem" }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       {!loaded && (
         <div className="absolute inset-0 bg-[#2c2e4f] animate-pulse rounded-md" />
@@ -102,11 +67,13 @@ const useInfiniteScroll = (callback: () => void) => {
 };
 
 function App() {
-  const [hoveredIndex, setHoveredIndex] = useState<number>(-1);
+  const repository = useRef<MovieRepository>(new CustomApiMovieRepository());
 
-  const { data, fetchNextPage } = useInfiniteQuery({
+  const { data, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["projects"],
-    queryFn: fetchMovies,
+    queryFn: ({ pageParam = 1 }) => {
+      return repository.current.fetchMovies(pageParam);
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages, lastPageParam) => {
       if (lastPageParam >= 500) return undefined; // Limita a 500 páginas
@@ -143,20 +110,19 @@ function App() {
           <h1 className="text-3xl font-bold">Mi Siguiente Película</h1>
         </header>
         <main
-          className="grid grid-cols-2 p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8"
+          className="grid grid-cols-2 p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 group"
           style={{ backgroundColor: "#181a36" }}
         >
           {/* Using motion.div for animation effects */}
           {allMovies.map((movie, index) => (
-            <MovieCard
-              key={index}
-              movie={movie}
-              index={index}
-              hoveredIndex={hoveredIndex}
-              setHoveredIndex={setHoveredIndex}
-            />
+            <MovieCard key={index} movie={movie} index={index} />
           ))}
         </main>
+        {isFetchingNextPage && (
+          <div className="text-white text-center p-4">
+            Cargando más películas...
+          </div>
+        )}
       </div>
     </>
   );
