@@ -7,11 +7,8 @@ class Movie(BaseModel):
     """
     id: int
     title: str
-    overview: str
-    release_date: str | None = None
+    release_date: str | None = None  # Optional field for release date
     poster_path: str | None = None  # Optional field for poster image
-    backdrop_path: str | None = None  # Optional field for backdrop image
-    genres: list[str] = []  # List of genre names associated with the movie
 
     @staticmethod
     def from_dict(data: dict):
@@ -27,11 +24,8 @@ class Movie(BaseModel):
         return Movie(
             id=data.get('id'),
             title=data.get('title'),
-            overview=data.get('overview'),
             release_date=data.get('release_date'),
-            poster_path=data.get('poster_path'),
-            backdrop_path=data.get('backdrop_path', None),  # Optional field
-            genres=data.get('genres', []),  # List of genre names
+            poster_path=data.get('poster_path')
         )
     
     @staticmethod
@@ -60,6 +54,81 @@ class Movie(BaseModel):
         return Movie(
             id=db_model.id,
             title=db_model.title,
+            release_date=db_model.release_date.isoformat() if db_model.release_date else None,
+            poster_path=db_model.poster_path
+        )
+    
+    def from_db_model_list(db_model_list: list):
+        """
+        Create a list of Movie instances from a list of database models.
+        
+        Args:
+            db_model_list (list): List of database model instances.
+        
+        Returns:
+            list: A list of Movie instances.
+        """
+        return [Movie.from_db_model(db_model) for db_model in db_model_list] if db_model_list else []
+
+class MovieDetails(BaseModel):
+    """
+    Movie model representing a movie entity.
+    """
+    id: int
+    title: str
+    overview: str
+    release_date: str | None = None
+    poster_path: str | None = None  # Optional field for poster image
+    backdrop_path: str | None = None  # Optional field for backdrop image
+    genres: list[str] = []  # List of genre names associated with the movie
+
+    @staticmethod
+    def from_dict(data: dict):
+        """
+        Create a Movie instance from a dictionary.
+        
+        Args:
+            data (dict): Dictionary containing movie data.
+        
+        Returns:
+            Movie: An instance of the Movie class.
+        """
+        return MovieDetails(
+            id=data.get('id'),
+            title=data.get('title'),
+            overview=data.get('overview'),
+            release_date=data.get('release_date'),
+            poster_path=data.get('poster_path'),
+            backdrop_path=data.get('backdrop_path', None),  # Optional field
+            genres=data.get('genres', []),  # List of genre names
+        )
+    
+    @staticmethod
+    def from_dict_list(data_list: list):
+        """
+        Create a list of Movie instances from a list of dictionaries.
+        
+        Args:
+            data_list (list): List of dictionaries containing movie data.
+        
+        Returns:
+            list: A list of Movie instances.
+        """
+        return [MovieDetails.from_dict(data) for data in data_list] if data_list else []
+    
+    def from_db_model(db_model: MovieModel):
+        """
+        Create a Movie instance from a database model.
+        
+        Args:
+            db_model (MovieModel): Database model instance.
+        
+        Returns:
+            Movie: An instance of the Movie class.
+        """
+        return MovieDetails(
+            id=db_model.id,
+            title=db_model.title,
             overview=db_model.overview,
             release_date=db_model.release_date.isoformat() if db_model.release_date else None,
             poster_path=db_model.poster_path,
@@ -77,7 +146,7 @@ class Movie(BaseModel):
         Returns:
             list: A list of Movie instances.
         """
-        return [Movie.from_db_model(db_model) for db_model in db_model_list] if db_model_list else []
+        return [MovieDetails.from_db_model(db_model) for db_model in db_model_list] if db_model_list else []
     
 class MovieRecommendation(BaseModel):
     """
@@ -150,4 +219,4 @@ class MovieRecommendationResponse(BaseModel):
     MovieRecommendationResponse model representing a response containing movie recommendations.
     """
     results: list[MovieRecommendation]
-    searched_movie: Movie
+    searched_movie: MovieDetails

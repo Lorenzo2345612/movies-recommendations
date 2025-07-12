@@ -18,25 +18,34 @@ services:
       POSTGRES_DB: movies-db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
-  backend-fast-api:
+
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: backend-fast-api
+    container_name: backend
     ports:
       - "8000:8000"
     depends_on:
+      - postgres-db
       - qdrant-db
-    environment:
-      - QDRANT_URL=http://qdrant-db:6333
+    # Env file for backend configuration
+    env_file:
+      - ./backend/.env
 
-  frontend-nextjs:
+  frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend-nextjs
+    container_name: frontend
     ports:
       - "3000:3000"
     depends_on:
-      - backend-fast-api
+      - backend
+    # Env file for frontend configuration
+    env_file:
+      - ./frontend/.env
+
+volumes:
+  qdrant_data:
+  postgres_data:

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import requests
 import os
-from models.movie import Movie  
+from models.movie import MovieDetails, Movie
 from db.movies import Movie as MovieModel, Genre as GenreModel
 from db.db import SessionLocal
 from models.pagination import Pagination, PaginatedResponse
@@ -18,6 +18,19 @@ class MoviesRepository(ABC):
 
         Returns:
             PaginatedResponse: A paginated response containing total count, current page, page size, and items.
+        """
+        pass
+
+    @abstractmethod
+    async def get_movie_details_by_id(self, movie_id: int) -> MovieDetails:
+        """
+        Get a movie by its ID.
+
+        Args:
+            movie_id (int): The ID of the movie to retrieve.
+
+        Returns:
+            Movie: An instance of the Movie class containing movie details.
         """
         pass
 
@@ -77,6 +90,22 @@ class MoviesRepositoryLocal(MoviesRepository):
             items=Movie.from_db_model_list(items) if items else []
         )
 
+    async def get_movie_details_by_id(self, movie_id: int) -> MovieDetails:
+        """
+        Get a movie by its ID from the local database.
+
+        Args:
+            movie_id (int): The ID of the movie to retrieve.
+
+        Returns:
+            Movie: An instance of the Movie class containing movie details.
+        """
+        model = self.session.query(MovieModel).filter(MovieModel.id == movie_id).first()
+        if model:
+            return MovieDetails.from_db_model(model)
+        else:
+            return None
+        
     async def get_movie_by_id(self, movie_id: int) -> Movie:
         """
         Get a movie by its ID from the local database.
@@ -143,11 +172,54 @@ class MoviesRepositoryTMDB(MoviesRepository):
                 page=pagination.page,
                 page_size=pagination.page_size,
                 total_pages=data['total_pages'],
-                items=Movie.from_dict_list(data['results'])
+                items=MovieDetails.from_dict_list(data['results'])
             )
         else:
             raise Exception(f"Error fetching popular movies: {response.status_code} - {response.text}")
         
+    async def get_movie_details_by_id(self, movie_id: int) -> MovieDetails:
+        """
+        Get a movie by its ID from TMDB.
+
+        Args:
+            movie_id (int): The ID of the movie to retrieve.
+
+        Returns:
+            Movie: An instance of the Movie class containing movie details.
+        """
+        # Load the API key from environment variables
+        api_key = os.getenv("TMDB_API_KEY")
+        if not api_key:
+            raise Exception("TMDB API key not found in environment variables.")
+        
+        params = {
+            "language": "es",
+            "api_key": api_key,
+        }
+        
+        response = requests.get(f"{self.url}movie/{movie_id}", params=params)
+
+        print(f"Fetching movie by ID {movie_id} from TMDB: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            return MovieDetails.from_dict(data)
+        else:
+            raise Exception(f"Error fetching movie by ID {movie_id}: {response.status_code} - {response.text}")
+        
+    async def get_embedding_by_id(self, movie_id: int) -> list:
+        """
+        Get the embedding of a movie by its ID from TMDB.
+
+        Args:
+            movie_id (int): The ID of the movie to retrieve the embedding for.
+
+        Returns:
+            list: A list containing the embedding of the movie.
+        """
+        # TMDB does not provide embeddings, so this method is not applicable.
+        raise NotImplementedError("TMDB does not provide embeddings for movies.")
+    
     async def get_movie_by_id(self, movie_id: int) -> Movie:
         """
         Get a movie by its ID from TMDB.
@@ -177,17 +249,4 @@ class MoviesRepositoryTMDB(MoviesRepository):
             return Movie.from_dict(data)
         else:
             raise Exception(f"Error fetching movie by ID {movie_id}: {response.status_code} - {response.text}")
-        
-    async def get_embedding_by_id(self, movie_id: int) -> list:
-        """
-        Get the embedding of a movie by its ID from TMDB.
-
-        Args:
-            movie_id (int): The ID of the movie to retrieve the embedding for.
-
-        Returns:
-            list: A list containing the embedding of the movie.
-        """
-        # TMDB does not provide embeddings, so this method is not applicable.
-        raise NotImplementedError("TMDB does not provide embeddings for movies.")
         

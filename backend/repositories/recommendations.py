@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from models.movie import Movie, MovieRecommendation
+from models.movie import MovieDetails, MovieRecommendation
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient as QdrantClientLib
 from repositories.movies import MoviesRepository
@@ -46,7 +46,7 @@ class EmbeddingClient:
     def __init__(self):
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    def get_embedding(self, movie: Movie) -> list[float]:
+    def get_embedding(self, movie: MovieDetails) -> list[float]:
         """
         Get the embedding vector for a movie.
 
@@ -62,11 +62,11 @@ class RecommendationsRepositoryTMDB(RecommendationsRepository):
     url = "https://api.themoviedb.org/3/"
 
     def __init__(self, movies_repository: MoviesRepository):
-        self.qdrant_client = QdrantClient()
-        self.embedding_client = EmbeddingClient()
+        qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        self.qdrant_client = QdrantClient(url=qdrant_url)
         super().__init__(movies_repository)
 
-    async def get_recommendations_by_movie(self, embedding: list[float], id:int) -> list[Movie]:
+    async def get_recommendations_by_movie(self, embedding: list[float], id:int) -> list[MovieDetails]:
         """
         Get a list of recommended movies based on a given movie from TMDB.
 
@@ -87,8 +87,6 @@ class RecommendationsRepositoryTMDB(RecommendationsRepository):
                 limit=10
 
             )
-
-            print(f"Recommended movie IDs: {recommended_ids}")
 
             # Fetch movie details from TMDB
             tasks = [

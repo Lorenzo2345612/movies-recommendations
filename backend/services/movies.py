@@ -31,7 +31,7 @@ class MovieService:
             Movie: An instance of the Movie class containing movie details.
         """
         try:
-            movie = await self.movie_repository.get_movie_by_id(movie_id)
+            movie = await self.movie_repository.get_movie_details_by_id(movie_id)
             embedding = await self.movie_repository.get_embedding_by_id(movie_id)
             if not movie:
                 raise ValueError(f"Movie with ID {movie_id} not found.")
