@@ -1,6 +1,9 @@
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 import requests
+import os
+
+TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")  # Default API key for testing
 
 # URL for the TMDB API to get popular movies in Spanish
 
@@ -30,7 +33,7 @@ def get_movie_genres():
     
     params = {
         "language": "es",
-        #"api_key": "None"
+        "api_key": TMDB_API_KEY  # Uncomment this line if you want to use the API key
     }
     
     response = requests.get(url_genres, headers=headers, params=params)
@@ -56,7 +59,7 @@ def get_movies(page: int):
     params = {
         "language": "es",
         "page": page,
-        "api_key": "e6a366c561d20cfdccb9ee9c4c4765a8"
+        "api_key": TMDB_API_KEY  # Uncomment this line if you want to use the API key
     }
     
     response = requests.get(url, headers=headers, params=params)
