@@ -1,14 +1,36 @@
 import type { Movie, MovieRecomendation } from "../models/movie";
 
 export abstract class MovieRepository {
-  abstract fetchMovies(page: number): Promise<Movie[]>;
-  abstract fetchMovieById(id: string): Promise<MovieRecomendation>;
+  abstract fetchMovies(
+    page: number,
+    filters?: {
+      genre?: string[];
+      certification?: string | null;
+    }
+  ): Promise<Movie[]>;
+  abstract fetchMovieById(
+    id: string,
+    maximum_certification?: string
+  ): Promise<MovieRecomendation>;
 }
 
 export class CustomApiMovieRepository extends MovieRepository {
-  async fetchMovies(page: number): Promise<Movie[]> {
+  async fetchMovies(
+    page: number,
+    filters: { genre?: string[]; certification?: string | null } = {}
+  ): Promise<Movie[]> {
+    //
     try {
-      const body = JSON.stringify({ page, page_size: 20 });
+      console.log("Fetching movies from custom API with filters:", filters);
+      const reqGenres = filters.genre || [];
+      const reqCertification = filters.certification || "";
+      const body = {
+        page,
+        page_size: 20,
+        genres: reqGenres,
+        maximum_certification: reqCertification,
+      };
+
       const url = `${import.meta.env.VITE_API_URL}/movies`;
 
       const options = {
@@ -16,7 +38,7 @@ export class CustomApiMovieRepository extends MovieRepository {
         headers: {
           "Content-Type": "application/json",
         },
-        body,
+        body: JSON.stringify(body),
       };
 
       const response = await fetch(url, options);
@@ -31,9 +53,14 @@ export class CustomApiMovieRepository extends MovieRepository {
     }
   }
 
-  async fetchMovieById(id: string): Promise<MovieRecomendation> {
+  async fetchMovieById(
+    id: string,
+    maximum_certification?: string
+  ): Promise<MovieRecomendation> {
     try {
-      const url = `${import.meta.env.VITE_API_URL}/movies/${id}`;
+      const url = `${
+        import.meta.env.VITE_API_URL
+      }/movies/${id}?maximum_certification=${maximum_certification || ""}`;
 
       const response = await fetch(url);
 

@@ -6,6 +6,7 @@ export interface Movie {
   backdrop_path: string;
   overview?: string;
   genres: string[];
+  certification: string;
 }
 
 export interface MovieRecomendation {

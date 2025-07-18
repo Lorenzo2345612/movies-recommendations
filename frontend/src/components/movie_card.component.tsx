@@ -7,12 +7,14 @@ interface MovieCardProps {
   movie: Movie;
   index: number;
   similarity?: number;
+  certification: string;
 }
 
 export const MovieCard = ({
   movie: { title, poster_path: backdrop_path, id },
   similarity,
   index,
+  certification,
 }: MovieCardProps) => {
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -41,6 +43,10 @@ export const MovieCard = ({
           Parecido: {similarity.toFixed(2)}%
         </div>
       )}
+      {/* Display a triangle in the top left corner if certification is provided */}
+      <div className="absolute top-2 left-2 bg-[#181a36] text-white text-xs px-2 py-1 rounded">
+        {certification}
+      </div>
 
       {/* Movie poster image */}
 
