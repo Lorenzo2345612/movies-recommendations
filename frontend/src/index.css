@@ -10,7 +10,7 @@
 }
 
 main:has(.movie-card:hover) .movie-card {
-  filter: blur(0.5rem) brightness(0.75);
+  filter: blur(0.15rem) brightness(0.95);
 }
 
 .svg-loader {
