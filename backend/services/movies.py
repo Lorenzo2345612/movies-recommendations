@@ -20,7 +20,7 @@ class MovieService:
         """
         return await self.movie_repository.get_popular_movies(pagination)
     
-    async def get_movie_by_id(self, movie_id: int):
+    async def get_movie_by_id(self, movie_id: int, maximum_certification: str = None):
         """
         Get a movie by its ID.
 
@@ -35,7 +35,7 @@ class MovieService:
             embedding = await self.movie_repository.get_embedding_by_id(movie_id)
             if not movie:
                 raise ValueError(f"Movie with ID {movie_id} not found.")
-            recommended_movies = await self.recommendations_repository.get_recommendations_by_movie(embedding, movie_id)
+            recommended_movies = await self.recommendations_repository.get_recommendations_by_movie(embedding, movie_id, maximum_certification)
 
             return MovieRecommendationResponse(
                 results=recommended_movies,

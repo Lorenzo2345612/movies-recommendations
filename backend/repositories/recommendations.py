@@ -8,6 +8,11 @@ import requests
 import asyncio
 
 
+MAXIMUM_MOVIES_RECOMMENDATIONS = 10
+MAXIMUM_MOVIES_CANDIDATES = 30
+THRESHOLD_SCORE = 0.50
+
+
 class RecommendationsRepository(ABC):
     def __init__(self, movies_repository: MoviesRepository):
         self.movies_repository = movies_repository
@@ -36,11 +41,11 @@ class QdrantClient:
         search_result = self.qdrant_client.search(
             collection_name=collection_name,
             query_vector=embedding,
-            limit=limit + 15
+            limit=limit
         )
         
 
-        return [(result.id, result.score) for result in search_result if result.id != id and result.score > 0.49][:limit]
+        return [(result.id, result.score) for result in search_result if result.id != id and result.score > THRESHOLD_SCORE]
     
 class EmbeddingClient:
     def __init__(self):
@@ -66,7 +71,7 @@ class RecommendationsRepositoryTMDB(RecommendationsRepository):
         self.qdrant_client = QdrantClient(url=qdrant_url)
         super().__init__(movies_repository)
 
-    async def get_recommendations_by_movie(self, embedding: list[float], id:int) -> list[MovieDetails]:
+    async def get_recommendations_by_movie(self, embedding: list[float], id:int, maximum_certification: str = None) -> list[MovieRecommendation]:
         """
         Get a list of recommended movies based on a given movie from TMDB.
 
@@ -84,15 +89,19 @@ class RecommendationsRepositoryTMDB(RecommendationsRepository):
                 collection_name="movies",
                 embedding=embedding,
                 id=id,
-                limit=10
+                limit=MAXIMUM_MOVIES_CANDIDATES
 
             )
 
             # Fetch movie details from TMDB
-            tasks = [
-                self.movies_repository.get_movie_by_id(movie_id[0])
-                for movie_id in recommended_ids
-            ]
+            tasks = []
+            for movie_id in recommended_ids:
+                tasks.append(
+                    self.movies_repository.get_movie_by_id(movie_id[0], maximum_certification)
+                )
+                if len(tasks) >= MAXIMUM_MOVIES_RECOMMENDATIONS:
+                    break
+                
 
             recommendations = await asyncio.gather(*tasks)
 

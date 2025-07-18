@@ -2,9 +2,10 @@ from abc import ABC, abstractmethod
 import requests
 import os
 from models.movie import MovieDetails, Movie
-from db.movies import Movie as MovieModel, Genre as GenreModel
+from db.movies import Certification, Movie as MovieModel, Genre as GenreModel
 from db.db import SessionLocal
 from models.pagination import Pagination, PaginatedResponse
+from sqlalchemy import select, func
 
 class MoviesRepository(ABC):
 
@@ -35,12 +36,13 @@ class MoviesRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_movie_by_id(self, movie_id: int) -> Movie:
+    async def get_movie_by_id(self, movie_id: int, maximum_certification: str = None) -> Movie:
         """
         Get a movie by its ID.
 
         Args:
             movie_id (int): The ID of the movie to retrieve.
+            maximum_certification (str, optional): The maximum certification to filter movies.
 
         Returns:
             Movie: An instance of the Movie class containing movie details.
@@ -75,10 +77,33 @@ class MoviesRepositoryLocal(MoviesRepository):
             PaginatedResponse: A paginated response containing total count, current page, page size, and items.
         """
         query = self.session.query(MovieModel).order_by(MovieModel.popularity.desc())
+        # Apply genre filtering if provided
+        if pagination.genres:
+            num_genres = len(pagination.genres)
+
+            query = (
+                query
+                .join(MovieModel.genres)
+                .filter(GenreModel.name.in_(pagination.genres))
+                .group_by(MovieModel.id)
+                .having(func.count(func.distinct(GenreModel.name)) == num_genres)
+    )
+        # Apply certification filtering if provided
+        if pagination.maximum_certification:
+            subquery = select(Certification.min_age).where(
+                Certification.certification == pagination.maximum_certification
+            ).scalar_subquery()
+            query = query.join(MovieModel.certification).filter(
+                MovieModel.certification.has(Certification.min_age <= subquery)
+            )
+        
         total_count = query.count()
         total_pages = (total_count + pagination.page_size - 1) // pagination.page_size
 
-        print(f"Fetching popular movies from local database: Total count = {total_count}, Page = {pagination.page}, Page Size = {pagination.page_size}")
+        print(f"Certification filter: {pagination.maximum_certification}")
+        print(f"Genre filter: {pagination.genres}")
+
+        print(f"Fetching popular movies from local database: Total count = {total_count}, Page = {pagination.page}, Page Size = {pagination.page_size} , Total Pages = {total_pages}")
         
         items = query.offset((pagination.page - 1) * pagination.page_size).limit(pagination.page_size).all()
         
@@ -106,7 +131,7 @@ class MoviesRepositoryLocal(MoviesRepository):
         else:
             return None
         
-    async def get_movie_by_id(self, movie_id: int) -> Movie:
+    async def get_movie_by_id(self, movie_id: int, maximum_certification: str = None) -> Movie:
         """
         Get a movie by its ID from the local database.
 
@@ -116,7 +141,16 @@ class MoviesRepositoryLocal(MoviesRepository):
         Returns:
             Movie: An instance of the Movie class containing movie details.
         """
-        model = self.session.query(MovieModel).filter(MovieModel.id == movie_id).first()
+        query = self.session.query(MovieModel).filter(MovieModel.id == movie_id)
+        # Apply certification filtering if provided
+        if maximum_certification:
+            subquery = select(Certification.min_age).where(
+                Certification.certification == maximum_certification
+            ).scalar_subquery()
+            query = query.join(MovieModel.certification).filter(
+                MovieModel.certification.has(Certification.min_age <= subquery)
+            )
+        model = query.first()
         if model:
             return Movie.from_db_model(model)
         else:

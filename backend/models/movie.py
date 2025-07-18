@@ -9,6 +9,7 @@ class Movie(BaseModel):
     title: str
     release_date: str | None = None  # Optional field for release date
     poster_path: str | None = None  # Optional field for poster image
+    certification: str
 
     @staticmethod
     def from_dict(data: dict):
@@ -25,7 +26,8 @@ class Movie(BaseModel):
             id=data.get('id'),
             title=data.get('title'),
             release_date=data.get('release_date'),
-            poster_path=data.get('poster_path')
+            poster_path=data.get('poster_path'),
+            certification=data.get('certification', 'N/A')  # Default to 'N/A' if not provided
         )
     
     @staticmethod
@@ -55,7 +57,8 @@ class Movie(BaseModel):
             id=db_model.id,
             title=db_model.title,
             release_date=db_model.release_date.isoformat() if db_model.release_date else None,
-            poster_path=db_model.poster_path
+            poster_path=db_model.poster_path,
+            certification=db_model.certification.certification if db_model.certification else 'N/A'  # Default to 'N/A' if not provided
         )
     
     def from_db_model_list(db_model_list: list):
@@ -81,6 +84,7 @@ class MovieDetails(BaseModel):
     poster_path: str | None = None  # Optional field for poster image
     backdrop_path: str | None = None  # Optional field for backdrop image
     genres: list[str] = []  # List of genre names associated with the movie
+    certification: str
 
     @staticmethod
     def from_dict(data: dict):
@@ -101,6 +105,7 @@ class MovieDetails(BaseModel):
             poster_path=data.get('poster_path'),
             backdrop_path=data.get('backdrop_path', None),  # Optional field
             genres=data.get('genres', []),  # List of genre names
+            certification=data.get('certification', 'N/A')  # Default to 'N/A' if not provided
         )
     
     @staticmethod
@@ -134,6 +139,7 @@ class MovieDetails(BaseModel):
             poster_path=db_model.poster_path,
             backdrop_path=db_model.backdrop_path if db_model.backdrop_path else None,  # Optional field
             genres=[genre.name for genre in db_model.genres] if db_model.genres else [],  # List of genre names
+            certification=db_model.certification.certification if db_model.certification else 'N/A'  # Default to 'N/A' if not provided
         )
     
     def from_db_model_list(db_model_list: list):

@@ -30,7 +30,7 @@ async def get_movies(pagination: Pagination):
         )
     
 @movies_router.get("/movies/{movie_id}", response_model=MovieRecommendationResponse, description="Get movie details by ID")
-async def get_movie_by_id(movie_id: int):
+async def get_movie_by_id(movie_id: int, maximum_certification: str = None):
     """
     Endpoint to get movie details by ID.
     
@@ -39,9 +39,11 @@ async def get_movie_by_id(movie_id: int):
     
     Returns:
         MovieRecommendationResponse: An object containing movie details and recommendations.
+
     """
     try:
-        return await movie_service.get_movie_by_id(movie_id)
+        print(f"Fetching movie with ID: {movie_id} and maximum certification: {maximum_certification}")
+        return await movie_service.get_movie_by_id(movie_id, maximum_certification)
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:

@@ -9,6 +9,13 @@ movie_genre = Table(
     Column('genre_id', Integer, ForeignKey('genres.id'))
 )
 
+class Certification(Base):
+    __tablename__ = 'certifications'
+
+    id = Column(Integer, primary_key=True)
+    certification = Column(String, index=True, nullable=False, unique=True)
+    min_age = Column(Integer, nullable=False)
+
 class Movie(Base):
     __tablename__ = 'movies'
 
@@ -22,6 +29,9 @@ class Movie(Base):
     poster_path = Column(String, nullable=True)
     backdrop_path = Column(String, nullable=True)
     embeddings = Column(String, nullable=True)
+
+    certification_id = Column(Integer, ForeignKey('certifications.id'), nullable=True)
+    certification = relationship("Certification", backref="movies")
 
     genres = relationship("Genre", secondary=movie_genre, back_populates="movies")
 
