@@ -19,33 +19,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres-db
-      - qdrant-db
-    # Env file for backend configuration
-    env_file:
-      - ./backend/.env
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    # Env file for frontend configuration
-    env_file:
-      - ./frontend/.env
-
 volumes:
   qdrant_data:
   postgres_data:

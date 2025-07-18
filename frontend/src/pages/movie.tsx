@@ -69,6 +69,7 @@ export const MoviePage = () => {
                       movie={movie.movie}
                       index={index}
                       similarity={movie.similarity_score * 100}
+                      certification={movie.movie.certification}
                     />
                   ))}
                 </div>

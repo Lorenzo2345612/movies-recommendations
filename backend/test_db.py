@@ -2,6 +2,7 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 import requests
 import os
+from dotenv import load_dotenv
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")  # Default API key for testing
 
@@ -18,7 +19,7 @@ headers = {
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Initialize the Qdrant client (assuming you have a Qdrant instance running)
-qdrant_client = QdrantClient(host='localhost', port=6333)
+qdrant_client = QdrantClient(url="https://qdrant-production-7093.up.railway.app")
 
 
 def get_movie_genres():
